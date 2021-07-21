@@ -41,7 +41,7 @@ async function main(workbook: ExcelScript.Workbook) {
   const OutputCell = mySheet.getRange("C10");
 
   //get the data using POST method 
-  const response = await fetch('https://groupmap.azurewebsites.net/api/Outputs', {
+  const response = await fetch(myAPI, {
     method: 'POST',
     body: JSON.stringify({
       username: myUserName,
