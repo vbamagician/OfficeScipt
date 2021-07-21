@@ -1,0 +1,129 @@
+async function main(workbook: ExcelScript.Workbook) {
+
+  /*code by Kamal Bharakhda 21-July-2021
+    Before fetching the query data from the API, 
+    let's create input model for the scipt. In input model, basically 
+    we will fetch all the inputs from the active sheet or named sheet. 
+    then we will begin fetching an information using API
+    as per our API, we have to use POST method to get the data. so 
+    Fetch method of JavaScript will help us to ge the data from resource. 
+    as this is POST method, fetch method will require two inputs from the user.
+    1. API URL
+    2. Input Variables for initializing server side functionality!
+    Now, second paramter of fetch requires three sub informations. 
+    1. request method which is POST
+    2. Body or variable information to get user data
+    3. request header information which tells the data will be in which format 
+    in our case it will be in JSON 
+  */
+
+  //let's get all the values from the worksheet to build input model
+
+  //target worksheet name where the input details have been placed. 
+  const mySheet = workbook.getWorksheet("DATA");
+
+  //API URL 
+  const myAPI = mySheet.getRange("C7").getValue();
+
+  //Username
+  const myUserName = mySheet.getRange("C3").getValue();
+
+  //Level Item
+  const myLevelItem = mySheet.getRange("C4").getValue();
+
+  //Map Type
+  const myMapType = mySheet.getRange("C5").getValue();
+
+  //level
+  const myLevel = mySheet.getRange("C6").getValue();
+
+  //Output Cell 
+  const OutputCell = mySheet.getRange("C10");
+
+  //get the data using POST method 
+  const response = await fetch('https://groupmap.azurewebsites.net/api/Outputs', {
+    method: 'POST',
+    body: JSON.stringify({
+      username: myUserName,
+      levelItem: myLevelItem,
+      mapType: myMapType,
+      level: myLevel,
+    }),
+    headers: {
+      'Content-type': 'application/json; charset=UTF-8',
+    },
+  });
+
+/*  the collected data may have many kind of details or keys but 
+    we only required few of them for our use like if the actual json collected 
+    data have keys like a,b,c,d and e like 5 keys. but you only required a,c and d or your use, then you can use interface facility of javascript to tell,"look java, we only required following key data from the whole bunch" so java script will only parse & load required data to our following "records" variable.
+    
+    in javascript they are using colon to define interface to the variable
+  */
+
+  //parse collected data to variable and get only interface object items
+  const records: MyListItems[] = await response.json();
+
+  //at this point, we have our data in JSON format. now it's time to use it
+
+  //Before we move ahead, let's clean the output cell value and validation if exists. 
+
+  //clear value of a output cell before we begin for the next step. 
+  OutputCell.clear(ExcelScript.ClearApplyTo.contents);
+
+  //reset the data validation before we begin for the next step. 
+  OutputCell.getDataValidation().clear();
+
+  /* we knows that, we can insert a validation list or dropdown in 
+    excel cell using two source or inputs. 
+    1. by inserting range address. i.e. =DATA!A1:A10
+    2. and by inserting string values seperating by listSeperator like comma in my region and in some part of europe they use semi-colon as list seperator. i.e. India, SriLanka, Pakistan, that way we will insert three items to the cell. 
+    We are going to use second method to insert a dropdown. 
+    we need a variable called "SourceString" to load "records" json data in comma seperated value. 
+  */
+
+  //initialize source string variable with nullstring 
+  let SourceString = "";
+  const charComma = ",";
+
+  //create comma-seperated string by looping through records data objects. we shall create new record object to hold each record to append it's value in source string. 
+
+  for (let record of records) {
+    SourceString += record.listItems;
+    SourceString += charComma;
+  }
+
+  //after appending all the items to the source string, the extra comma character will there so we have to remove it create perfect sourcestring. otherwise dropdown will have one blank list item.
+
+  SourceString = SourceString.substring(0,SourceString.length-1);
+
+  // Data validation rule list changed on output cell on selectedSheet
+  OutputCell.getDataValidation().setRule({
+    list: {
+      inCellDropDown: true,
+      source: SourceString
+    }
+  });
+
+  //now, if we want to adjust the extra attributes of the getDataValidation Object then we can by attemting following operations. 
+
+  // Data validation error alert changed on output cell on selectedSheet
+  OutputCell.getDataValidation().setPrompt({ showPrompt: true, message: "", title: "" });
+
+  // Data validation error alert changed on output cell on selectedSheet
+  OutputCell.getDataValidation().setErrorAlert({ showAlert: true, style: ExcelScript.DataValidationAlertStyle.stop, message: "", title: "" });
+
+  // Data validation ignoreblanks changed on output cell on selectedSheet
+  OutputCell.getDataValidation().setIgnoreBlanks(true);
+
+  return;
+
+}
+
+//Interface to tell javascript to pick only mentioned keys or items from the fetched data. 
+interface MyListItems{
+  listItems: string
+}
+
+//By: Kamal C. Bharakhda
+//On: 21-July-2021
