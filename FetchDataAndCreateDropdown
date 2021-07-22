@@ -23,7 +23,7 @@ async function main(workbook: ExcelScript.Workbook) {
   const mySheet = workbook.getWorksheet("DATA");
 
   //API URL 
-  const myAPI = mySheet.getRange("C7").getValue();
+  const myAPI = mySheet.getRange("C7").getValue().ToString();
 
   //Username
   const myUserName = mySheet.getRange("C3").getValue();
